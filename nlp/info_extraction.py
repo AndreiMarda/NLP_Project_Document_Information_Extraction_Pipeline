@@ -1,7 +1,4 @@
 import re
-import spacy
-
-nlp = spacy.load("en_core_web_sm")
 
 # Regex patterns
 EMAIL_REGEX = r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+"
@@ -18,18 +15,9 @@ def extract_phone_numbers(text: str):
     return re.findall(PHONE_REGEX, text)
 
 
-def extract_named_entities(text: str):
-    """
-    Extract named entities using spaCy NER.
-    Returns list of dicts: {text, label, start_char, end_char}
-    """
+def extract_named_entities(text: str, nlp):
     doc = nlp(text)
-    ents = []
-    for ent in doc.ents:
-        ents.append({
-            "text": ent.text,
-            "label": ent.label_,
-            "start_char": ent.start_char,
-            "end_char": ent.end_char
-        })
-    return ents
+    return [
+        {"text": ent.text, "label": ent.label_}
+        for ent in doc.ents
+    ]
