@@ -1,5 +1,3 @@
-# retrieval/semantic_search.py
-
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 import os
