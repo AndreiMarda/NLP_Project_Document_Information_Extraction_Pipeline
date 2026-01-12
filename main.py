@@ -1,8 +1,19 @@
 import spacy
+import os
+import hashlib
+import re
 
 from utils.document_io import load_folder, load_file, load_url
 from utils.actions import print_indexed_sentences, extract_info_from_query, qa_on_doc
+from retrieval.semantic_search import SemanticCorpusIndex
 
+
+def safe_name(s: str) -> str:
+    return re.sub(r"[^a-zA-Z0-9._-]+", "_", s)
+
+def _cache_key_from_url(url: str) -> str:
+    # stable short key for URLs
+    return "url_" + hashlib.sha1(url.encode("utf-8")).hexdigest()[:12]
 
 def choose_source():
     print("\nChoose input source:")
@@ -13,18 +24,26 @@ def choose_source():
 
     if choice == "1":
         folder = input("Folder path (e.g. pdf): ").strip()
-        return load_folder(folder)
+        docs = load_folder(folder)
+        # corpus key based on folder path
+        cache_key = "folder_" + os.path.abspath(folder)
+        return docs, cache_key
 
     if choice == "2":
         path = input("File path (e.g. pdf/biology.pdf): ").strip()
-        return [load_file(path)]
+        docs = [load_file(path)]
+        # corpus key based on absolute file path
+        cache_key = "file_" + os.path.abspath(path)
+        return docs, cache_key
 
     if choice == "3":
         url = input("URL: ").strip()
-        return [load_url(url)]
+        docs = [load_url(url)]
+        cache_key = _cache_key_from_url(url)
+        return docs, cache_key
 
     print("Invalid choice.")
-    return []
+    return [], ""
 
 
 def menu():
@@ -35,6 +54,7 @@ def menu():
         print("1) Print indexed sentences ")
         print("2) Extract info (emails, phones, persons, orgs, locations, dates, full_text)")
         print("3) Ask a question ")
+        print("4) Semantic search across multiple documents (topic search)")
         print("0) Exit")
 
         opt = input("Select option: ").strip()
@@ -42,7 +62,7 @@ def menu():
         if opt == "0":
             return
 
-        docs = choose_source()
+        docs, cache_key = choose_source()
         if not docs:
             continue
 
@@ -83,6 +103,34 @@ def menu():
                     print()
                 ans = qa_on_doc(d, question)
                 print(f"[DOC={d.doc_id}] {ans}")
+
+
+        elif opt == "4":
+            query = input("Topic / query: ").strip()
+            top_k = input("Top K results (default 5): ").strip()
+            top_k = int(top_k) if top_k.isdigit() else 5
+
+            # per-corpus cache file
+            cache_path = f"corpus_index__{safe_name(cache_key)}.pkl"
+
+            index = SemanticCorpusIndex()
+
+            try:
+                index.load(cache_path)
+                print(f"Loaded cached index from {cache_path}")
+            except Exception:
+                print("Building index (first run or cache missing)...")
+                index.build_from_docs(docs, min_par_len=50)
+                index.save(cache_path)
+                print(f"Saved index to {cache_path}")
+            results = index.search(query, top_k=top_k)
+
+            print("\n=== Results ===")
+            for score, chunk in results:
+                snippet = chunk.text if len(chunk.text) < 300 else chunk.text[:300] + "..."
+                print(f"- score={score:.3f} | DOC={chunk.doc_id} | P{chunk.paragraph_id}")
+                print(f"  {snippet}\n")
+
 
         else:
             print("Invalid option.")
