@@ -12,11 +12,11 @@ def choose_source():
     choice = input("Your choice: ").strip()
 
     if choice == "1":
-        folder = input("Folder path (e.g. PDFs): ").strip()
+        folder = input("Folder path (e.g. pdf): ").strip()
         return load_folder(folder)
 
     if choice == "2":
-        path = input("File path (e.g. PDFs/biology.pdf): ").strip()
+        path = input("File path (e.g. pdf/biology.pdf): ").strip()
         return [load_file(path)]
 
     if choice == "3":
