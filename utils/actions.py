@@ -16,7 +16,3 @@ def print_indexed_sentences(doc, nlp) -> None:
 def extract_info_from_query(doc, user_query: str, nlp) -> Dict[str, Any]:
     intent = detect_intent(user_query)
     return execute_intent(doc.text, intent, nlp)
-
-
-def qa_on_doc(doc, question: str) -> str:
-    return answer_question(question, doc.text)

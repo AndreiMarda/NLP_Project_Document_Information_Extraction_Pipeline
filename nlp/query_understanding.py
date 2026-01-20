@@ -54,7 +54,7 @@ def detect_intent(query: str) -> Intent:
             query=query
         )
 
-    # Default fallback if nothing detected → general NER info
+    # Default fallback if nothing detected general NER info
     if not targets:
         targets = ["persons", "orgs", "locations", "dates"]
 
